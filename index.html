@@ -1,0 +1,1463 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Renz Calculator 3D</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0c0c0c 0%, #1a1a2e 50%, #16213e 100%);
+            min-height: 100vh;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        /* Animated Background */
+        .bg-animation {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            opacity: 0.1;
+        }
+
+        .particle {
+            position: absolute;
+            width: 2px;
+            height: 2px;
+            background: #00ffff;
+            border-radius: 50%;
+            animation: float 6s infinite linear;
+        }
+
+        @keyframes float {
+            0% { transform: translateY(100vh) rotate(0deg); opacity: 0; }
+            10% { opacity: 1; }
+            90% { opacity: 1; }
+            100% { transform: translateY(-100px) rotate(360deg); opacity: 0; }
+        }
+
+        /* Main Container */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            perspective: 1000px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            transform: translateZ(50px);
+        }
+
+        .title {
+            font-size: clamp(2rem, 5vw, 4rem);
+            background: linear-gradient(45deg, #00ffff, #ff00ff, #ffff00);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-shadow: 0 0 30px rgba(0, 255, 255, 0.5);
+            animation: glow 2s ease-in-out infinite alternate;
+            margin-bottom: 10px;
+        }
+
+        @keyframes glow {
+            from { filter: brightness(1) drop-shadow(0 0 20px rgba(0, 255, 255, 0.3)); }
+            to { filter: brightness(1.2) drop-shadow(0 0 40px rgba(0, 255, 255, 0.6)); }
+        }
+
+        .subtitle {
+            color: #888;
+            font-size: 1.2rem;
+            margin-bottom: 20px;
+        }
+
+        /* Mode Selector */
+        .mode-selector {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+
+        .mode-btn {
+            padding: 12px 24px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid transparent;
+            border-radius: 25px;
+            color: #fff;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .mode-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.5s;
+        }
+
+        .mode-btn:hover::before {
+            left: 100%;
+        }
+
+        .mode-btn.active {
+            border-color: #00ffff;
+            background: rgba(0, 255, 255, 0.2);
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.3);
+        }
+
+        /* SVG Icons */
+        .icon {
+            width: 20px;
+            height: 20px;
+            fill: currentColor;
+        }
+
+        /* Calculator Container */
+        .calc-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            transform-style: preserve-3d;
+        }
+
+        .calc-display {
+            background: rgba(0, 0, 0, 0.8);
+            border-radius: 20px;
+            padding: 30px;
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(0, 255, 255, 0.3);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+            transform: rotateY(-5deg) translateZ(20px);
+            transition: transform 0.3s ease;
+        }
+
+        .calc-display:hover {
+            transform: rotateY(0deg) translateZ(30px);
+        }
+
+        .display-screen {
+            background: #000;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+            border: 2px solid #00ffff;
+            box-shadow: inset 0 0 20px rgba(0, 255, 255, 0.1);
+            min-height: 120px;
+        }
+
+        .display-input {
+            color: #00ffff;
+            font-size: 1.5rem;
+            font-family: 'Courier New', monospace;
+            margin-bottom: 10px;
+            word-break: break-all;
+        }
+
+        .display-result {
+            color: #fff;
+            font-size: 2rem;
+            font-weight: bold;
+            text-align: right;
+        }
+
+        /* Button Grid */
+        .calc-buttons {
+            background: rgba(0, 0, 0, 0.8);
+            border-radius: 20px;
+            padding: 30px;
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 0, 255, 0.3);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+            transform: rotateY(5deg) translateZ(20px);
+            transition: transform 0.3s ease;
+        }
+
+        .calc-buttons:hover {
+            transform: rotateY(0deg) translateZ(30px);
+        }
+
+        .button-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+        }
+
+        .btn {
+            padding: 20px;
+            border: none;
+            border-radius: 15px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            backdrop-filter: blur(10px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+        }
+
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            transition: width 0.3s, height 0.3s;
+        }
+
+        .btn:active::before {
+            width: 200px;
+            height: 200px;
+        }
+
+        .btn-number {
+            background: rgba(0, 100, 200, 0.3);
+            color: #fff;
+            border: 1px solid rgba(0, 150, 255, 0.5);
+        }
+
+        .btn-number:hover {
+            background: rgba(0, 150, 255, 0.5);
+            box-shadow: 0 10px 20px rgba(0, 150, 255, 0.3);
+            transform: translateY(-3px);
+        }
+
+        .btn-operator {
+            background: rgba(255, 100, 0, 0.3);
+            color: #fff;
+            border: 1px solid rgba(255, 150, 0, 0.5);
+        }
+
+        .btn-operator:hover {
+            background: rgba(255, 150, 0, 0.5);
+            box-shadow: 0 10px 20px rgba(255, 150, 0, 0.3);
+            transform: translateY(-3px);
+        }
+
+        .btn-function {
+            background: rgba(150, 0, 255, 0.3);
+            color: #fff;
+            border: 1px solid rgba(200, 0, 255, 0.5);
+        }
+
+        .btn-function:hover {
+            background: rgba(200, 0, 255, 0.5);
+            box-shadow: 0 10px 20px rgba(200, 0, 255, 0.3);
+            transform: translateY(-3px);
+        }
+
+        .btn-equals {
+            background: rgba(0, 255, 100, 0.3);
+            color: #fff;
+            border: 1px solid rgba(0, 255, 150, 0.5);
+            grid-column: span 2;
+        }
+
+        .btn-equals:hover {
+            background: rgba(0, 255, 150, 0.5);
+            box-shadow: 0 10px 20px rgba(0, 255, 150, 0.3);
+            transform: translateY(-3px);
+        }
+
+        .btn-clear {
+            background: rgba(255, 0, 100, 0.3);
+            color: #fff;
+            border: 1px solid rgba(255, 0, 150, 0.5);
+        }
+
+        .btn-clear:hover {
+            background: rgba(255, 0, 150, 0.5);
+            box-shadow: 0 10px 20px rgba(255, 0, 150, 0.3);
+            transform: translateY(-3px);
+        }
+
+        /* Physics Panel */
+        .physics-panel {
+            grid-column: span 2;
+            background: rgba(0, 0, 0, 0.8);
+            border-radius: 20px;
+            padding: 30px;
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 0, 0.3);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+            margin-top: 20px;
+            display: none;
+        }
+
+        .physics-panel.active {
+            display: block;
+            animation: slideUp 0.5s ease;
+        }
+
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(50px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .physics-formulas {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .formula-btn {
+            padding: 15px;
+            background: rgba(255, 255, 0, 0.1);
+            border: 1px solid rgba(255, 255, 0, 0.3);
+            border-radius: 10px;
+            color: #ffff00;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+        }
+
+        .formula-btn:hover {
+            background: rgba(255, 255, 0, 0.2);
+            transform: scale(1.05);
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .calc-container {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+
+            .calc-display, .calc-buttons {
+                transform: none;
+            }
+
+            .button-grid {
+                grid-template-columns: repeat(4, 1fr);
+                gap: 10px;
+            }
+
+            .btn {
+                padding: 15px 10px;
+                font-size: 1rem;
+            }
+
+            .mode-selector {
+                gap: 10px;
+            }
+
+            .mode-btn {
+                padding: 8px 16px;
+                font-size: 0.9rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .container {
+                padding: 10px;
+            }
+
+            .calc-display, .calc-buttons {
+                padding: 20px;
+            }
+
+            .btn {
+                padding: 12px 8px;
+                font-size: 0.9rem;
+            }
+
+            .display-input {
+                font-size: 1.2rem;
+            }
+
+            .display-result {
+                font-size: 1.5rem;
+            }
+        }
+
+        /* Loading Animation */
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(0, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: #00ffff;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* History Panel */
+        .history-panel {
+            position: fixed;
+            top: 0;
+            right: -300px;
+            width: 300px;
+            height: 100vh;
+            background: rgba(0, 0, 0, 0.9);
+            backdrop-filter: blur(20px);
+            border-left: 1px solid rgba(0, 255, 255, 0.3);
+            padding: 20px;
+            transition: right 0.3s ease;
+            z-index: 1000;
+            overflow-y: auto;
+        }
+
+        .history-panel.active {
+            right: 0;
+        }
+
+        .history-item {
+            padding: 10px;
+            margin-bottom: 10px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            border-left: 3px solid #00ffff;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .history-item:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateX(5px);
+        }
+
+        .history-toggle {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: rgba(0, 255, 255, 0.2);
+            border: 1px solid #00ffff;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            z-index: 1001;
+            transition: all 0.3s ease;
+        }
+
+        .history-toggle:hover {
+            background: rgba(0, 255, 255, 0.4);
+            transform: scale(1.1);
+        }
+
+        .voice-toggle {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: rgba(255, 0, 255, 0.2);
+            border: 1px solid #ff00ff;
+            border-radius: 50%;
+            width: 60px;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            z-index: 1001;
+            transition: all 0.3s ease;
+        }
+
+        .voice-toggle:hover {
+            background: rgba(255, 0, 255, 0.4);
+            transform: scale(1.1);
+        }
+
+        .voice-toggle.active {
+            background: rgba(255, 0, 255, 0.6);
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+    </style>
+</head>
+<body>
+    <!-- SVG Icons Definition -->
+    <svg style="display: none;">
+        <defs>
+            <symbol id="icon-calculator" viewBox="0 0 24 24">
+                <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 17H7v-2h2v2zm4 0h-2v-2h2v2zm4 0h-2v-2h2v2zm-8-4H7v-2h2v2zm4 0h-2v-2h2v2zm4 0h-2v-2h2v2zm-8-4H7V7h2v2zm4 0h-2V7h2v2zm4 0h-2V7h2v2z"/>
+            </symbol>
+            <symbol id="icon-science" viewBox="0 0 24 24">
+                <path d="M9 11H7v6h2v-6zm4 0h-2v6h2v-6zm4 0h-2v6h2v-6zM4.5 3l2.38 2.38C6.32 5.85 6 6.4 6 7v4.5l5.5 9h1l5.5-9V7c0-.6-.32-1.15-.88-1.62L19.5 3h-15z"/>
+            </symbol>
+            <symbol id="icon-physics" viewBox="0 0 24 24">
+                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+            </symbol>
+            <symbol id="icon-convert" viewBox="0 0 24 24">
+                <path d="M6.99 11L3 15l3.99 4v-3H14v-2H6.99v-3zM21 9l-3.99-4v3H10v2h7.01v3L21 9z"/>
+            </symbol>
+            <symbol id="icon-history" viewBox="0 0 24 24">
+                <path d="M13 3c-4.97 0-9 4.03-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42C8.27 19.99 10.51 21 13 21c4.97 0 9-4.03 9-9s-4.03-9-9-9zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z"/>
+            </symbol>
+            <symbol id="icon-mic" viewBox="0 0 24 24">
+                <path d="M12 14c1.66 0 2.99-1.34 2.99-3L15 5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5.3-3c0 3-2.54 5.1-5.3 5.1S6.7 14 6.7 11H5c0 3.41 2.72 6.23 6 6.72V21h2v-3.28c3.28-.48 6-3.3 6-6.72h-1.7z"/>
+            </symbol>
+            <symbol id="icon-clear" viewBox="0 0 24 24">
+                <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+            </symbol>
+            <symbol id="icon-equals" viewBox="0 0 24 24">
+                <path d="M19 10H5v2h14v-2zm0 4H5v2h14v-2z"/>
+            </symbol>
+        </defs>
+    </svg>
+
+    <!-- Animated Background -->
+    <div class="bg-animation" id="bgAnimation"></div>
+
+    <!-- History Toggle -->
+    <div class="history-toggle" onclick="toggleHistory()">
+        <svg class="icon"><use href="#icon-history"></use></svg>
+    </div>
+
+    <!-- Voice Toggle -->
+    <div class="voice-toggle" id="voiceToggle" onclick="toggleVoice()">
+        <svg class="icon"><use href="#icon-mic"></use></svg>
+    </div>
+
+    <!-- History Panel -->
+    <div class="history-panel" id="historyPanel">
+        <h3 style="color: #00ffff; margin-bottom: 20px;">Riwayat Perhitungan</h3>
+        <div id="historyList"></div>
+        <button onclick="clearHistory()" style="width: 100%; padding: 10px; background: rgba(255, 0, 0, 0.3); border: 1px solid #ff0000; border-radius: 10px; color: #fff; cursor: pointer; margin-top: 20px;">Hapus Semua</button>
+    </div>
+
+    <div class="container">
+        <div class="header">
+            <h1 class="title">Renz CALC</h1>
+            <p class="subtitle">Kalkulator Futuristik 3D Multi-Fungsi</p>
+        </div>
+
+        <!-- Mode Selector -->
+        <div class="mode-selector">
+            <div class="mode-btn active" data-mode="basic">
+                <svg class="icon"><use href="#icon-calculator"></use></svg>
+                Dasar
+            </div>
+            <div class="mode-btn" data-mode="scientific">
+                <svg class="icon"><use href="#icon-science"></use></svg>
+                Ilmiah
+            </div>
+            <div class="mode-btn" data-mode="physics">
+                <svg class="icon"><use href="#icon-physics"></use></svg>
+                Fisika
+            </div>
+            <div class="mode-btn" data-mode="converter">
+                <svg class="icon"><use href="#icon-convert"></use></svg>
+                Konversi
+            </div>
+        </div>
+
+        <div class="calc-container">
+            <!-- Display -->
+            <div class="calc-display">
+                <div class="display-screen">
+                    <div class="display-input" id="display">0</div>
+                    <div class="display-result" id="result"></div>
+                </div>
+                <div style="color: #888; font-size: 0.9rem; text-align: center;">
+                    Mode: <span id="currentMode">Dasar</span>
+                </div>
+            </div>
+
+            <!-- Buttons -->
+            <div class="calc-buttons">
+                <div class="button-grid" id="buttonGrid">
+                    <!-- Buttons will be generated by JavaScript -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Physics Panel -->
+        <div class="physics-panel" id="physicsPanel">
+            <h3 style="color: #ffff00; margin-bottom: 20px;">
+                <svg class="icon" style="width: 24px; height: 24px; vertical-align: middle; margin-right: 10px;"><use href="#icon-physics"></use></svg>
+                Rumus Fisika
+            </h3>
+            <div class="physics-formulas">
+                <div class="formula-btn" data-formula="v = d/t">Kecepatan<br><small>v = d/t</small></div>
+                <div class="formula-btn" data-formula="F = m*a">Gaya<br><small>F = m×a</small></div>
+                <div class="formula-btn" data-formula="E = m*c^2">Energi<br><small>E = mc²</small></div>
+                <div class="formula-btn" data-formula="P = F/A">Tekanan<br><small>P = F/A</small></div>
+                <div class="formula-btn" data-formula="W = F*d">Usaha<br><small>W = F×d</small></div>
+                <div class="formula-btn" data-formula="P = W/t">Daya<br><small>P = W/t</small></div>
+                <div class="formula-btn" data-formula="v = u + a*t">GLBB<br><small>v = u + at</small></div>
+                <div class="formula-btn" data-formula="s = u*t + 0.5*a*t^2">Jarak GLBB<br><small>s = ut + ½at²</small></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global Variables
+        let currentInput = '0';
+        let previousInput = '';
+        let operator = '';
+        let waitingForOperand = false;
+        let currentMode = 'basic';
+        let history = JSON.parse(localStorage.getItem('calcHistory')) || [];
+        let recognition = null;
+        let isListening = false;
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            try {
+                createBackgroundAnimation();
+                initializeEventListeners();
+                switchMode('basic');
+                updateDisplay();
+                loadHistory();
+                initVoiceCommands();
+            } catch (error) {
+                console.error('Initialization error:', error);
+            }
+        });
+
+        // Event Listeners
+        function initializeEventListeners() {
+            // Mode selector event listeners
+            document.querySelectorAll('.mode-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const mode = this.getAttribute('data-mode');
+                    switchMode(mode);
+                    
+                    // Update active state
+                    document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+                    this.classList.add('active');
+                });
+            });
+
+            // Physics formula event listeners
+            document.addEventListener('click', function(e) {
+                if (e.target.closest('.formula-btn')) {
+                    const formula = e.target.closest('.formula-btn').getAttribute('data-formula');
+                    insertPhysicsFormula(formula);
+                }
+            });
+        }
+
+        // Background Animation
+        function createBackgroundAnimation() {
+            const bgAnimation = document.getElementById('bgAnimation');
+            for (let i = 0; i < 50; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'particle';
+                particle.style.left = Math.random() * 100 + '%';
+                particle.style.animationDelay = Math.random() * 6 + 's';
+                particle.style.animationDuration = (Math.random() * 3 + 3) + 's';
+                bgAnimation.appendChild(particle);
+            }
+        }
+
+        // Mode Switching
+        function switchMode(mode) {
+            try {
+                currentMode = mode;
+                document.getElementById('currentMode').textContent = getModeDisplayName(mode);
+                
+                // Show/hide physics panel
+                const physicsPanel = document.getElementById('physicsPanel');
+                if (mode === 'physics') {
+                    physicsPanel.classList.add('active');
+                } else {
+                    physicsPanel.classList.remove('active');
+                }
+                
+                generateButtons(mode);
+            } catch (error) {
+                console.error('Mode switch error:', error);
+            }
+        }
+
+        function getModeDisplayName(mode) {
+            const names = {
+                'basic': 'Dasar',
+                'scientific': 'Ilmiah',
+                'physics': 'Fisika',
+                'converter': 'Konversi'
+            };
+            return names[mode] || 'Dasar';
+        }
+
+        // Button Generation
+        function generateButtons(mode) {
+            try {
+                const buttonGrid = document.getElementById('buttonGrid');
+                buttonGrid.innerHTML = '';
+
+                let buttons = [];
+
+                switch(mode) {
+                    case 'basic':
+                        buttons = [
+                            {text: 'C', class: 'btn-clear', action: 'clear'},
+                            {text: '±', class: 'btn-function', action: 'negate'},
+                            {text: '%', class: 'btn-operator', action: 'operator'},
+                            {text: '÷', class: 'btn-operator', action: 'operator'},
+                            {text: '7', class: 'btn-number', action: 'number'},
+                            {text: '8', class: 'btn-number', action: 'number'},
+                            {text: '9', class: 'btn-number', action: 'number'},
+                            {text: '×', class: 'btn-operator', action: 'operator'},
+                            {text: '4', class: 'btn-number', action: 'number'},
+                            {text: '5', class: 'btn-number', action: 'number'},
+                            {text: '6', class: 'btn-number', action: 'number'},
+                            {text: '−', class: 'btn-operator', action: 'operator'},
+                            {text: '1', class: 'btn-number', action: 'number'},
+                            {text: '2', class: 'btn-number', action: 'number'},
+                            {text: '3', class: 'btn-number', action: 'number'},
+                            {text: '+', class: 'btn-operator', action: 'operator'},
+                            {text: '0', class: 'btn-number', action: 'number'},
+                            {text: '.', class: 'btn-number', action: 'decimal'},
+                            {text: '=', class: 'btn-equals', action: 'calculate'}
+                        ];
+                        break;
+
+                    case 'scientific':
+                        buttons = [
+                            {text: 'C', class: 'btn-clear', action: 'clear'},
+                            {text: '(', class: 'btn-function', action: 'number'},
+                            {text: ')', class: 'btn-function', action: 'number'},
+                            {text: '÷', class: 'btn-operator', action: 'operator'},
+                            {text: 'sin', class: 'btn-function', action: 'function'},
+                            {text: 'cos', class: 'btn-function', action: 'function'},
+                            {text: 'tan', class: 'btn-function', action: 'function'},
+                            {text: '×', class: 'btn-operator', action: 'operator'},
+                            {text: 'ln', class: 'btn-function', action: 'function'},
+                            {text: 'log', class: 'btn-function', action: 'function'},
+                            {text: '√', class: 'btn-function', action: 'function'},
+                            {text: '−', class: 'btn-operator', action: 'operator'},
+                            {text: 'x²', class: 'btn-function', action: 'function'},
+                            {text: 'xʸ', class: 'btn-function', action: 'function'},
+                            {text: 'π', class: 'btn-function', action: 'constant'},
+                            {text: '+', class: 'btn-operator', action: 'operator'},
+                            {text: 'e', class: 'btn-function', action: 'constant'},
+                            {text: '!', class: 'btn-function', action: 'function'},
+                            {text: '=', class: 'btn-equals', action: 'calculate'}
+                        ];
+                        break;
+
+                    case 'physics':
+                        buttons = [
+                            {text: 'C', class: 'btn-clear', action: 'clear'},
+                            {text: 'g', class: 'btn-function', action: 'constant'},
+                            {text: 'c', class: 'btn-function', action: 'constant'},
+                            {text: '÷', class: 'btn-operator', action: 'operator'},
+                            {text: '7', class: 'btn-number', action: 'number'},
+                            {text: '8', class: 'btn-number', action: 'number'},
+                            {text: '9', class: 'btn-number', action: 'number'},
+                            {text: '×', class: 'btn-operator', action: 'operator'},
+                            {text: '4', class: 'btn-number', action: 'number'},
+                            {text: '5', class: 'btn-number', action: 'number'},
+                            {text: '6', class: 'btn-number', action: 'number'},
+                            {text: '−', class: 'btn-operator', action: 'operator'},
+                            {text: '1', class: 'btn-number', action: 'number'},
+                            {text: '2', class: 'btn-number', action: 'number'},
+                            {text: '3', class: 'btn-number', action: 'number'},
+                            {text: '+', class: 'btn-operator', action: 'operator'},
+                            {text: '0', class: 'btn-number', action: 'number'},
+                            {text: '.', class: 'btn-number', action: 'decimal'},
+                            {text: '=', class: 'btn-equals', action: 'calculate'}
+                        ];
+                        break;
+
+                    case 'converter':
+                        buttons = [
+                            {text: 'C', class: 'btn-clear', action: 'clear'},
+                            {text: 'km→m', class: 'btn-function', action: 'convert'},
+                            {text: 'm→cm', class: 'btn-function', action: 'convert'},
+                            {text: '÷', class: 'btn-operator', action: 'operator'},
+                            {text: '7', class: 'btn-number', action: 'number'},
+                            {text: '8', class: 'btn-number', action: 'number'},
+                            {text: '9', class: 'btn-number', action: 'number'},
+                            {text: '×', class: 'btn-operator', action: 'operator'},
+                            {text: '4', class: 'btn-number', action: 'number'},
+                            {text: '5', class: 'btn-number', action: 'number'},
+                            {text: '6', class: 'btn-number', action: 'number'},
+                            {text: '−', class: 'btn-operator', action: 'operator'},
+                            {text: '1', class: 'btn-number', action: 'number'},
+                            {text: '2', class: 'btn-number', action: 'number'},
+                            {text: '3', class: 'btn-number', action: 'number'},
+                            {text: '+', class: 'btn-operator', action: 'operator'},
+                            {text: '0', class: 'btn-number', action: 'number'},
+                            {text: '.', class: 'btn-number', action: 'decimal'},
+                            {text: '=', class: 'btn-equals', action: 'calculate'}
+                        ];
+                        break;
+                }
+
+                buttons.forEach(btn => {
+                    const button = document.createElement('button');
+                    button.className = `btn ${btn.class}`;
+                    button.textContent = btn.text;
+                    
+                    // Safe event listener
+                    button.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        handleButtonClick(btn.text, btn.action, e);
+                    });
+                    
+                    if (btn.text === '=' && mode === 'basic') {
+                        button.style.gridColumn = 'span 2';
+                    }
+                    
+                    buttonGrid.appendChild(button);
+                });
+            } catch (error) {
+                console.error('Button generation error:', error);
+            }
+        }
+
+        // Button Click Handler
+        function handleButtonClick(value, action, event) {
+            try {
+                // Add click animation
+                if (event && event.target) {
+                    event.target.style.transform = 'scale(0.95)';
+                    setTimeout(() => {
+                        event.target.style.transform = '';
+                    }, 150);
+                }
+
+                switch(action) {
+                    case 'number':
+                        inputNumber(value);
+                        break;
+                    case 'operator':
+                        inputOperator(value);
+                        break;
+                    case 'decimal':
+                        inputDecimal();
+                        break;
+                    case 'clear':
+                        clear();
+                        break;
+                    case 'calculate':
+                        calculate();
+                        break;
+                    case 'function':
+                        inputFunction(value);
+                        break;
+                    case 'constant':
+                        inputConstant(value);
+                        break;
+                    case 'negate':
+                        negate();
+                        break;
+                    case 'convert':
+                        convert(value);
+                        break;
+                }
+                updateDisplay();
+            } catch (error) {
+                console.error('Button click error:', error);
+                currentInput = 'Error';
+                updateDisplay();
+            }
+        }
+
+        // Input Functions
+        function inputNumber(num) {
+            try {
+                if (waitingForOperand) {
+                    currentInput = num;
+                    waitingForOperand = false;
+                } else {
+                    currentInput = currentInput === '0' ? num : currentInput + num;
+                }
+            } catch (error) {
+                console.error('Input number error:', error);
+            }
+        }
+
+        function inputOperator(nextOperator) {
+            try {
+                const inputValue = parseFloat(currentInput);
+
+                if (previousInput === '') {
+                    previousInput = inputValue;
+                } else if (operator) {
+                    const currentValue = previousInput || 0;
+                    const newValue = performCalculation(currentValue, inputValue, operator);
+
+                    currentInput = String(newValue);
+                    previousInput = newValue;
+                }
+
+                waitingForOperand = true;
+                operator = nextOperator;
+            } catch (error) {
+                console.error('Input operator error:', error);
+            }
+        }
+
+        function inputDecimal() {
+            try {
+                if (waitingForOperand) {
+                    currentInput = '0.';
+                    waitingForOperand = false;
+                } else if (currentInput.indexOf('.') === -1) {
+                    currentInput += '.';
+                }
+            } catch (error) {
+                console.error('Input decimal error:', error);
+            }
+        }
+
+        function clear() {
+            try {
+                currentInput = '0';
+                previousInput = '';
+                operator = '';
+                waitingForOperand = false;
+            } catch (error) {
+                console.error('Clear error:', error);
+            }
+        }
+
+        function negate() {
+            try {
+                currentInput = currentInput.charAt(0) === '-' ? 
+                    currentInput.slice(1) : '-' + currentInput;
+            } catch (error) {
+                console.error('Negate error:', error);
+            }
+        }
+
+        function inputFunction(func) {
+            try {
+                const value = parseFloat(currentInput);
+                let result;
+
+                switch(func) {
+                    case 'sin':
+                        result = Math.sin(value * Math.PI / 180);
+                        break;
+                    case 'cos':
+                        result = Math.cos(value * Math.PI / 180);
+                        break;
+                    case 'tan':
+                        result = Math.tan(value * Math.PI / 180);
+                        break;
+                    case 'ln':
+                        result = Math.log(value);
+                        break;
+                    case 'log':
+                        result = Math.log10(value);
+                        break;
+                    case '√':
+                        result = Math.sqrt(value);
+                        break;
+                    case 'x²':
+                        result = Math.pow(value, 2);
+                        break;
+                    case 'xʸ':
+                        inputOperator('^');
+                        return;
+                    case '!':
+                        result = factorial(value);
+                        break;
+                    default:
+                        return;
+                }
+                
+                if (isNaN(result) || !isFinite(result)) {
+                    currentInput = 'Error';
+                } else {
+                    currentInput = String(result);
+                    addToHistory(`${func}(${value}) = ${result}`);
+                }
+            } catch (error) {
+                console.error('Function error:', error);
+                currentInput = 'Error';
+            }
+        }
+
+        function inputConstant(constant) {
+            try {
+                switch(constant) {
+                    case 'π':
+                        currentInput = String(Math.PI);
+                        break;
+                    case 'e':
+                        currentInput = String(Math.E);
+                        break;
+                    case 'g':
+                        currentInput = '9.81'; // gravitasi bumi
+                        break;
+                    case 'c':
+                        currentInput = '299792458'; // kecepatan cahaya
+                        break;
+                }
+            } catch (error) {
+                console.error('Constant error:', error);
+            }
+        }
+
+        function convert(conversion) {
+            try {
+                const value = parseFloat(currentInput);
+                let result;
+
+                switch(conversion) {
+                    case 'km→m':
+                        result = value * 1000;
+                        addToHistory(`${value} km = ${result} m`);
+                        break;
+                    case 'm→cm':
+                        result = value * 100;
+                        addToHistory(`${value} m = ${result} cm`);
+                        break;
+                }
+                
+                if (isNaN(result) || !isFinite(result)) {
+                    currentInput = 'Error';
+                } else {
+                    currentInput = String(result);
+                }
+            } catch (error) {
+                console.error('Convert error:', error);
+                currentInput = 'Error';
+            }
+        }
+
+        // Calculation Functions
+        function calculate() {
+            try {
+                const inputValue = parseFloat(currentInput);
+
+                if (previousInput !== '' && operator) {
+                    const newValue = performCalculation(previousInput, inputValue, operator);
+                    
+                    if (isNaN(newValue) || !isFinite(newValue)) {
+                        currentInput = 'Error';
+                    } else {
+                        addToHistory(`${previousInput} ${operator} ${inputValue} = ${newValue}`);
+                        currentInput = String(newValue);
+                    }
+                    
+                    previousInput = '';
+                    operator = '';
+                    waitingForOperand = true;
+                }
+            } catch (error) {
+                console.error('Calculate error:', error);
+                currentInput = 'Error';
+            }
+        }
+
+        function performCalculation(firstValue, secondValue, operator) {
+            try {
+                switch(operator) {
+                    case '+':
+                        return firstValue + secondValue;
+                    case '−':
+                        return firstValue - secondValue;
+                    case '×':
+                        return firstValue * secondValue;
+                    case '÷':
+                        return secondValue !== 0 ? firstValue / secondValue : NaN;
+                    case '%':
+                        return firstValue % secondValue;
+                    case '^':
+                        return Math.pow(firstValue, secondValue);
+                    default:
+                        return secondValue;
+                }
+            } catch (error) {
+                console.error('Calculation error:', error);
+                return NaN;
+            }
+        }
+
+        function factorial(n) {
+            try {
+                if (n < 0 || n > 170) return NaN; // Prevent overflow
+                if (n === 0 || n === 1) return 1;
+                let result = 1;
+                for (let i = 2; i <= n; i++) {
+                    result *= i;
+                }
+                return result;
+            } catch (error) {
+                console.error('Factorial error:', error);
+                return NaN;
+            }
+        }
+
+        // Physics Formula Functions
+        function insertPhysicsFormula(formula) {
+            try {
+                currentInput = formula;
+                updateDisplay();
+            } catch (error) {
+                console.error('Physics formula error:', error);
+            }
+        }
+
+        // Display Functions
+        function updateDisplay() {
+            try {
+                const display = document.getElementById('display');
+                const result = document.getElementById('result');
+                
+                if (display) {
+                    display.textContent = currentInput;
+                }
+                
+                // Show live calculation preview
+                if (result && previousInput && operator && !waitingForOperand) {
+                    try {
+                        const preview = performCalculation(
+                            parseFloat(previousInput), 
+                            parseFloat(currentInput), 
+                            operator
+                        );
+                        if (isNaN(preview) || !isFinite(preview)) {
+                            result.textContent = '';
+                        } else {
+                            result.textContent = `= ${preview}`;
+                        }
+                    } catch {
+                        result.textContent = '';
+                    }
+                } else if (result) {
+                    result.textContent = '';
+                }
+            } catch (error) {
+                console.error('Display update error:', error);
+            }
+        }
+
+        // History Functions
+        function addToHistory(calculation) {
+            try {
+                history.unshift({
+                    calculation: calculation,
+                    timestamp: new Date().toLocaleString('id-ID')
+                });
+                
+                // Keep only last 50 calculations
+                if (history.length > 50) {
+                    history = history.slice(0, 50);
+                }
+                
+                localStorage.setItem('calcHistory', JSON.stringify(history));
+                loadHistory();
+            } catch (error) {
+                console.error('Add to history error:', error);
+            }
+        }
+
+        function loadHistory() {
+            try {
+                const historyList = document.getElementById('historyList');
+                if (!historyList) return;
+                
+                historyList.innerHTML = '';
+                
+                history.forEach((item, index) => {
+                    const historyItem = document.createElement('div');
+                    historyItem.className = 'history-item';
+                    historyItem.innerHTML = `
+                        <div style="color: #00ffff; font-weight: bold;">${item.calculation}</div>
+                        <div style="color: #888; font-size: 0.8rem; margin-top: 5px;">${item.timestamp}</div>
+                    `;
+                    historyItem.addEventListener('click', function() {
+                        // Extract result from calculation and set as current input
+                        const parts = item.calculation.split(' = ');
+                        if (parts.length > 1) {
+                            currentInput = parts[1];
+                            updateDisplay();
+                        }
+                    });
+                    historyList.appendChild(historyItem);
+                });
+            } catch (error) {
+                console.error('Load history error:', error);
+            }
+        }
+
+        function toggleHistory() {
+            try {
+                const historyPanel = document.getElementById('historyPanel');
+                if (historyPanel) {
+                    historyPanel.classList.toggle('active');
+                }
+            } catch (error) {
+                console.error('Toggle history error:', error);
+            }
+        }
+
+        function clearHistory() {
+            try {
+                history = [];
+                localStorage.removeItem('calcHistory');
+                loadHistory();
+            } catch (error) {
+                console.error('Clear history error:', error);
+            }
+        }
+
+        // Voice Commands
+        function initVoiceCommands() {
+            try {
+                if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+                    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+                    recognition = new SpeechRecognition();
+                    recognition.continuous = false;
+                    recognition.interimResults = false;
+                    recognition.lang = 'id-ID';
+
+                    recognition.onresult = function(event) {
+                        try {
+                            const command = event.results[0][0].transcript.toLowerCase();
+                            processVoiceCommand(command);
+                        } catch (error) {
+                            console.error('Voice recognition result error:', error);
+                        }
+                    };
+
+                    recognition.onerror = function(event) {
+                        console.error('Voice recognition error:', event.error);
+                        stopListening();
+                    };
+
+                    recognition.onend = function() {
+                        stopListening();
+                    };
+                }
+            } catch (error) {
+                console.error('Voice init error:', error);
+            }
+        }
+
+        function toggleVoice() {
+            try {
+                if (!recognition) return;
+                
+                if (isListening) {
+                    recognition.stop();
+                } else {
+                    recognition.start();
+                    startListening();
+                }
+            } catch (error) {
+                console.error('Toggle voice error:', error);
+            }
+        }
+
+        function startListening() {
+            try {
+                isListening = true;
+                const voiceToggle = document.getElementById('voiceToggle');
+                if (voiceToggle) {
+                    voiceToggle.classList.add('active');
+                }
+            } catch (error) {
+                console.error('Start listening error:', error);
+            }
+        }
+
+        function stopListening() {
+            try {
+                isListening = false;
+                const voiceToggle = document.getElementById('voiceToggle');
+                if (voiceToggle) {
+                    voiceToggle.classList.remove('active');
+                }
+            } catch (error) {
+                console.error('Stop listening error:', error);
+            }
+        }
+
+        function processVoiceCommand(command) {
+            try {
+                if (command.includes('hapus') || command.includes('clear')) {
+                    clear();
+                } else if (command.includes('hitung') || command.includes('sama dengan')) {
+                    calculate();
+                } else if (command.includes('tambah')) {
+                    inputOperator('+');
+                } else if (command.includes('kurang')) {
+                    inputOperator('−');
+                } else if (command.includes('kali')) {
+                    inputOperator('×');
+                } else if (command.includes('bagi')) {
+                    inputOperator('÷');
+                }
+                updateDisplay();
+            } catch (error) {
+                console.error('Voice command error:', error);
+            }
+        }
+
+        // Keyboard Support
+        document.addEventListener('keydown', function(event) {
+            try {
+                const key = event.key;
+                
+                // Prevent default for calculator keys
+                if ('0123456789+-*/.=()'.includes(key) || key === 'Enter' || key === 'Escape') {
+                    event.preventDefault();
+                }
+                
+                if ('0123456789'.includes(key)) {
+                    inputNumber(key);
+                } else if (key === '+') {
+                    inputOperator('+');
+                } else if (key === '-') {
+                    inputOperator('−');
+                } else if (key === '*') {
+                    inputOperator('×');
+                } else if (key === '/') {
+                    inputOperator('÷');
+                } else if (key === '.') {
+                    inputDecimal();
+                } else if (key === '=' || key === 'Enter') {
+                    calculate();
+                } else if (key === 'Escape' || key === 'c' || key === 'C') {
+                    clear();
+                } else if (key === '(' || key === ')') {
+                    inputNumber(key);
+                }
+                
+                updateDisplay();
+            } catch (error) {
+                console.error('Keyboard error:', error);
+            }
+        });
+
+        // Gesture Support for Touch Devices
+        let touchStartX = 0;
+        let touchStartY = 0;
+
+        document.addEventListener('touchstart', function(e) {
+            try {
+                touchStartX = e.touches[0].clientX;
+                touchStartY = e.touches[0].clientY;
+            } catch (error) {
+                console.error('Touch start error:', error);
+            }
+        });
+
+        document.addEventListener('touchend', function(e) {
+            try {
+                const touchEndX = e.changedTouches[0].clientX;
+                const touchEndY = e.changedTouches[0].clientY;
+                
+                const deltaX = touchEndX - touchStartX;
+                const deltaY = touchEndY - touchStartY;
+                
+                // Swipe gestures
+                if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 50) {
+                    const historyPanel = document.getElementById('historyPanel');
+                    if (historyPanel) {
+                        if (deltaX > 0) {
+                            // Swipe right - show history
+                            historyPanel.classList.add('active');
+                        } else {
+                            // Swipe left - hide history
+                            historyPanel.classList.remove('active');
+                        }
+                    }
+                }
+            } catch (error) {
+                console.error('Touch end error:', error);
+            }
+        });
+
+        // Auto-save and restore state
+        function saveState() {
+            try {
+                const state = {
+                    currentInput,
+                    previousInput,
+                    operator,
+                    waitingForOperand,
+                    currentMode
+                };
+                localStorage.setItem('calcState', JSON.stringify(state));
+            } catch (error) {
+                console.error('Save state error:', error);
+            }
+        }
+
+        function restoreState() {
+            try {
+                const savedState = localStorage.getItem('calcState');
+                if (savedState) {
+                    const state = JSON.parse(savedState);
+                    currentInput = state.currentInput || '0';
+                    previousInput = state.previousInput || '';
+                    operator = state.operator || '';
+                    waitingForOperand = state.waitingForOperand || false;
+                    currentMode = state.currentMode || 'basic';
+                }
+            } catch (error) {
+                console.error('Restore state error:', error);
+            }
+        }
+
+        // Auto-save state on changes
+        setInterval(saveState, 2000);
+
+        // Initialize on load
+        window.addEventListener('load', function() {
+            try {
+                restoreState();
+                updateDisplay();
+            } catch (error) {
+                console.error('Load error:', error);
+            }
+        });
+
+        // Global error handler
+        window.addEventListener('error', function(e) {
+            console.error('Global error:', e.error);
+            // Don't set error state here to prevent infinite loops
+        });
+
+        // Unhandled promise rejection handler
+        window.addEventListener('unhandledrejection', function(e) {
+            console.error('Unhandled promise rejection:', e.reason);
+            e.preventDefault();
+        });
+
+    </script>
+</body>
+</html>
