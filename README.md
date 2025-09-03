@@ -523,7 +523,7 @@ Punya ide fitur baru? Buat [Feature Request](https://github.com/RenzMc/Kalkulato
   
 MIT License  
   
-Copyright (c) 2024 Renz  
+Copyright (c) 2025 Renz  
   
 Permission is hereby granted, free of charge, to any person obtaining a copy  
 of this software and associated documentation files (the "Software"), to deal  
